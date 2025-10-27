@@ -29,13 +29,17 @@ class Star2D {
     public:
         float radius;
         float mass;
+
+        glm::vec2 position;
         std::vector<float> NDC_coordinates;
         glm::vec3 world_coordinates;
 
         Star2D(float radius, float mass, int segments) {
             this->radius = radius;
             this->mass = mass;
-            world_coordinates = glm::vec3(0, 0, 0);
+
+            this->position = glm::vec2(0, 0);
+            world_coordinates = glm::vec3(position, 0);
             genStar(segments);
         }
 

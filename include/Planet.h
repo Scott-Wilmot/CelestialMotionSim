@@ -29,11 +29,25 @@ class Planet2D {
     public:
         std::vector<float> NDC_coordinates;
         glm::vec3 world_coordinates;
-        float radius;
 
-        Planet2D(int segments, float radius, float x, float y) {
+        float radius;
+        float mass;
+        glm::vec2 position;
+        glm::vec2 velocity;
+
+        Planet2D(int segments, float radius, float mass, glm::vec2 position, glm::vec2 velocity) {
+            this->radius = radius;
+            this->position = position;
+            this->velocity = velocity;
+            this->mass = mass;
+
             genPlanet(segments);
-            world_coordinates = glm::vec3(x, y, 0.0);
+            world_coordinates = glm::vec3(position, 0.0);
+        }
+
+        void updatePosition() {
+            position += velocity;
+            world_coordinates = glm::vec3(position, 0.0);
         }
 
     private:

@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <memory>
+#include <cmath>
 
 #include "Planet.h"
 #include "Star.h"
@@ -39,6 +40,30 @@ class Simulation2D {
 
         void addPlanet(Planet2D planet) {
             planets.push_back(planet);
+        }
+
+        /*
+         * Calculates the amount of gravitaional acceleration a planet has from the star, changes the velocity, then updates position
+         */
+        void update() {
+            for (Planet2D& planet : planets) {
+                glm::vec2 r = star.position - planet.position;
+                float dist = glm::length(r);
+
+                if (dist == 0.0f) continue;
+                glm::vec2 dir = r / dist;
+
+                float G = 6.6743e-11f;
+                float f = (G * star.mass) / (dist * dist);
+                glm::vec2 force = dir * f;
+
+                glm::vec2 accel = force / planet.mass;
+                planet.velocity += accel;
+                std::cout << accel.x << " " << accel.y << std::endl;
+                std::cout << planet.velocity.x << " " << planet.velocity.y << std::endl;
+
+                planet.updatePosition();
+            }
         }
 };
 

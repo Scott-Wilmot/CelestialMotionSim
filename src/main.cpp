@@ -17,8 +17,8 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1000;
+const unsigned int SCR_HEIGHT = 800;
 
 int main() {
 
@@ -47,30 +47,10 @@ int main() {
         "..\\shaders\\fragment.glsl");
 
     // Simulation Initialization and Setup
-    Star2D star = Star2D(5, 10, 100);
-    Planet2D planet = Planet2D(100, 1, 2, 2);
+    Star2D star = Star2D(10, 100000000000, 100);
+    Planet2D planet = Planet2D(100, 3, 2, glm::vec2(30.0f, 30.0f), glm::vec2(0.1f, -0.2f));
     Simulation2D sim = Simulation2D(star);
     sim.addPlanet(planet);
-
-    // unsigned int VBO, VAO;
-    // glGenVertexArrays(1, &VAO);
-    // glGenBuffers(1, &VBO);
-    //
-    // glBindVertexArray(VAO);
-    // glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // glBufferData(GL_ARRAY_BUFFER,
-    //     planet.NDC_coordinates.size() * sizeof(float),
-    //         planet.NDC_coordinates.data(),
-    //         GL_STATIC_DRAW);
-    //
-    // glVertexAttribPointer(0,
-    //     2,
-    //     GL_FLOAT,
-    //     GL_FALSE,
-    //     2 * sizeof(float),
-    //     (void*)0
-    //     );
-    // glEnableVertexAttribArray(0);
 
     unsigned int starVBO, planetVBO;
     unsigned int starVAO, planetVAO;
@@ -100,11 +80,13 @@ int main() {
     int projectionLocation = glGetUniformLocation(shaderProgram.ID, "projection");
 
     // Projection pre-step
-    glm::mat4 projection = glm::mat4(1.0f);
-    projection = glm::perspective(glm::radians(90.0f), 800.0f / 600.0f, 0.1f, 100.0f);
-    glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
+    float aspect = (float)SCR_WIDTH / (float)SCR_HEIGHT;
+    float orthoDimensions = 100.0f;
+    glm::mat4 projection = glm::ortho(-orthoDimensions * aspect, orthoDimensions * aspect, -orthoDimensions, orthoDimensions, -1.0f, 1.0f);
 
     while (!glfwWindowShouldClose(window)) {
+        // Update planets positions
+        sim.update();
 
         // Read input
         processInput(window);
@@ -113,18 +95,18 @@ int main() {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Coordinate matricies
-        glm::mat4 view = glm::mat4(1.0f);
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
-        glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
-
         // Activate shader program
         shaderProgram.use();
+        glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
+
+        // Coordinate matricies
+        glm::mat4 view = glm::mat4(1.0f);
+        glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
 
         // Draw star
         glBindVertexArray(starVAO);
         glm::mat4 starModel = glm::mat4(1.0f);
-        starModel = glm::translate(starModel, planet.world_coordinates);
+        starModel = glm::translate(starModel, star.world_coordinates);
         starModel = glm::scale(starModel, glm::vec3(star.radius, star.radius, 1.0));
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(starModel));
         glDrawArrays(GL_TRIANGLE_FAN, 0, star.NDC_coordinates.size() / 2);
@@ -132,7 +114,7 @@ int main() {
         // Draw planet
         glBindVertexArray(planetVAO);
         glm::mat4 planetModel = glm::mat4(1.0f);
-        planetModel = glm::translate(planetModel, planet.world_coordinates);
+        planetModel = glm::translate(planetModel, sim.planets[0].world_coordinates);
         planetModel = glm::scale(planetModel, glm::vec3(planet.radius, planet.radius, 1.0));
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(planetModel));
         glDrawArrays(GL_TRIANGLE_FAN, 0, planet.NDC_coordinates.size() / 2);
@@ -146,9 +128,7 @@ int main() {
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
+    glViewport(0, 0, width, height);
 }
 
 void processInput(GLFWwindow* window) {
