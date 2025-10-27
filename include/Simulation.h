@@ -45,7 +45,7 @@ class Simulation2D {
         /*
          * Calculates the amount of gravitaional acceleration a planet has from the star, changes the velocity, then updates position
          */
-        void update() {
+        void update(float delta) {
             for (Planet2D& planet : planets) {
                 glm::vec2 r = star.position - planet.position;
                 float dist = glm::length(r);
@@ -59,8 +59,6 @@ class Simulation2D {
 
                 glm::vec2 accel = force / planet.mass;
                 planet.velocity += accel;
-                std::cout << accel.x << " " << accel.y << std::endl;
-                std::cout << planet.velocity.x << " " << planet.velocity.y << std::endl;
 
                 planet.updatePosition();
             }

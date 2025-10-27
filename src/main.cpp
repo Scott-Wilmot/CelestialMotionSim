@@ -20,6 +20,11 @@ void processInput(GLFWwindow* window);
 const unsigned int SCR_WIDTH = 1000;
 const unsigned int SCR_HEIGHT = 800;
 
+const float TIMESTEP = 1.0f / 60.0f;
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+float accumulatedTime = 0.0f;
+
 int main() {
 
     glfwInit();
@@ -48,7 +53,7 @@ int main() {
 
     // Simulation Initialization and Setup
     Star2D star = Star2D(10, 100000000000, 100);
-    Planet2D planet = Planet2D(100, 3, 2, glm::vec2(30.0f, 30.0f), glm::vec2(0.1f, -0.2f));
+    Planet2D planet = Planet2D(100, 3, 2, glm::vec2(30.0f, 0.0f), glm::vec2(0.0f, -0.32f));
     Simulation2D sim = Simulation2D(star);
     sim.addPlanet(planet);
 
@@ -81,12 +86,21 @@ int main() {
 
     // Projection pre-step
     float aspect = (float)SCR_WIDTH / (float)SCR_HEIGHT;
-    float orthoDimensions = 100.0f;
+    float orthoDimensions = 50.0f;
     glm::mat4 projection = glm::ortho(-orthoDimensions * aspect, orthoDimensions * aspect, -orthoDimensions, orthoDimensions, -1.0f, 1.0f);
 
     while (!glfwWindowShouldClose(window)) {
-        // Update planets positions
-        sim.update();
+        // Delta calculations
+        float currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+        accumulatedTime += deltaTime;
+
+        while (accumulatedTime >= TIMESTEP) {
+            // Update planets positions
+            sim.update(deltaTime);
+            accumulatedTime -= TIMESTEP;
+        }
 
         // Read input
         processInput(window);

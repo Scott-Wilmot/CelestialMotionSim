@@ -17,7 +17,6 @@ include_directories(include)
 # Define executable names
 set (EXECUTABLES
         main
-        test
 )
 
 # Create, link, and include for each executable file
