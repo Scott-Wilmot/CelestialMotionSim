@@ -12,7 +12,12 @@ class Shader {
 public:
     unsigned int ID;
 
-    Shader(const char* vertexPath, const char* fragmentPath) {
+    // Shader Uniform Locations
+    int modelLocation, viewLocation, projectionLocation;
+
+    virtual ~Shader() = 0;
+
+    Shader(const char* vertexPath, const char* fragmentPath, float aspect) {
         // File and data objects
         std::string vertexCode, fragmentCode;
         std::ifstream vertexFile,fragmentFile;
@@ -60,6 +65,13 @@ public:
         // Delete shaders
         glDeleteShader(vertex);
         glDeleteShader(fragment);
+
+        // Shader uniform initialization
+        modelLocation = glGetUniformLocation(ID, "model");
+        viewLocation = glGetUniformLocation(ID, "view");
+        projectionLocation = glGetUniformLocation(ID, "projection");
+
+        aspect_ratio = aspect;
     }
 
     void use() {
@@ -69,6 +81,8 @@ public:
     // Uniform utility functions
 
 private:
+    float aspect_ratio;
+
     void checkCompileErrors(unsigned int shader, std::string type) {
         int success;
         char infoLog[1024];
@@ -89,5 +103,29 @@ private:
     }
 };
 
+class Shader2D : public Shader {
+    public:
+        Shader2D(const char *vertexPath, const char *fragmentPath, float aspect, float ortho)
+            : Shader(vertexPath, fragmentPath, aspect)
+        {
+            orthographic_bound = ortho;
+        }
+
+
+
+    private:
+        // Ortho parameters
+        float orthographic_bound;
+};
+
+class Shader3D : public Shader {
+    public:
+        Shader3D(const char *vertexPath, const char *fragmentPath, float* aspect)
+            : Shader(vertexPath, fragmentPath, aspect)
+        {
+
+        }
+
+};
 
 #endif //OPENGLPRACTICE_SHADER_H

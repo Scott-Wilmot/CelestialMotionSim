@@ -1,0 +1,8 @@
+//
+// Created by scott on 10/28/2025.
+//
+
+#ifndef OPENGLPRACTICE_CAMERA_H
+#define OPENGLPRACTICE_CAMERA_H
+
+#endif //OPENGLPRACTICE_CAMERA_H
