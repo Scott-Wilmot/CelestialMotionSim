@@ -13,9 +13,7 @@ public:
     unsigned int ID;
 
     // Shader Uniform Locations
-    int modelLocation, viewLocation, projectionLocation;
-
-    virtual ~Shader() = 0;
+    int modelLocation, viewLocation, projectionLocation; // Remove modelLocation due to it being used in renderer.h?
 
     Shader(const char* vertexPath, const char* fragmentPath, float aspect) {
         // File and data objects
@@ -78,52 +76,38 @@ public:
         glUseProgram(ID);
     }
 
-    // Uniform utility functions
-
-private:
-    float aspect_ratio;
-
-    void checkCompileErrors(unsigned int shader, std::string type) {
-        int success;
-        char infoLog[1024];
-        if (type != "PROGRAM") {
-            glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-            if (!success) {
-                glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-                std::cout << "ERROR::SHADER_COMPILATION_ERROR of type : " << type << "\n" << infoLog << "\n -- -------------------------------------------------------------------------- --" << std::endl;
-            }
-        }
-        else {
-            glGetProgramiv(shader, GL_LINK_STATUS, &success);
-            if (!success) {
-                glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-                std::cout << "ERROR::SHADER_PROGRAM_LINKING_ERROR of type : " << type << "\n" << infoLog << "\n -- -------------------------------------------------------------------------- --" << std::endl;
-            }
-        }
+    // Shader Uniform Setters
+    void set_model(glm::mat4 model) {
+        glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
     }
-};
-
-class Shader2D : public Shader {
-    public:
-        Shader2D(const char *vertexPath, const char *fragmentPath, float aspect, float ortho)
-            : Shader(vertexPath, fragmentPath, aspect)
-        {
-            orthographic_bound = ortho;
-        }
-
+    void set_view(glm::mat4 view) {
+        glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
+    }
+    void set_projection(glm::mat4 projection) {
+        glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
+    }
 
 
     private:
-        // Ortho parameters
-        float orthographic_bound;
-};
+        float aspect_ratio;
 
-class Shader3D : public Shader {
-    public:
-        Shader3D(const char *vertexPath, const char *fragmentPath, float* aspect)
-            : Shader(vertexPath, fragmentPath, aspect)
-        {
-
+        void checkCompileErrors(unsigned int shader, std::string type) {
+            int success;
+            char infoLog[1024];
+            if (type != "PROGRAM") {
+                glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+                if (!success) {
+                    glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+                    std::cout << "ERROR::SHADER_COMPILATION_ERROR of type : " << type << "\n" << infoLog << "\n -- -------------------------------------------------------------------------- --" << std::endl;
+                }
+            }
+            else {
+                glGetProgramiv(shader, GL_LINK_STATUS, &success);
+                if (!success) {
+                    glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+                    std::cout << "ERROR::SHADER_PROGRAM_LINKING_ERROR of type : " << type << "\n" << infoLog << "\n -- -------------------------------------------------------------------------- --" << std::endl;
+                }
+            }
         }
 
 };

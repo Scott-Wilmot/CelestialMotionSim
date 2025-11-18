@@ -17,12 +17,14 @@
 #include "Graphics/Renderer.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow* window);
+void processInput(GLFWwindow* window, Renderer& renderer);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
-const unsigned int SCR_WIDTH = 1200;
-const unsigned int SCR_HEIGHT = 1000;
+const unsigned int SCR_WIDTH = 1800;
+const unsigned int SCR_HEIGHT = 1200;
 
 float orthoDimensions = 1000.0f;
+float fov = 45.0f;
 float aspect = (float)SCR_WIDTH / (float)SCR_HEIGHT;
 
 const float TIMESTEP = 1.0f / 60.0f;
@@ -32,27 +34,29 @@ float accumulatedTime = 0.0f;
 
 int main() {
 
-    Renderer renderer(SCR_WIDTH, SCR_HEIGHT, TIMESTEP);
+    // Shader2D shaderProgram("..\\shaders\\vertex.glsl",
+    //     "..\\shaders\\fragment.glsl", aspect, orthoDimensions);
+    // std::unique_ptr<Shader> shaderProgram = std::make_unique<Shader3D>("..\\shaders\\vertex.glsl",
+    //     "..\\shaders\\fragment.glsl", aspect, fov);
 
-    Shader2D shaderProgram("..\\shaders\\vertex.glsl",
-        "..\\shaders\\fragment.glsl", aspect, ortho.get());
+    Renderer renderer(SCR_WIDTH, SCR_HEIGHT, TIMESTEP, 45.0f);
 
-    std::unique_ptr<Star2D> star = std::make_unique<Star2D>(100, glm::vec2(0, 0), glm::vec2(0, 0), 1e11f, 10);
+    // std::unique_ptr<Star2D> star = std::make_unique<Star2D>(100, glm::vec2(0, 0), glm::vec2(0, 0), 1e11f, 10);
+    std::unique_ptr<Star> star = std::make_unique<Star>(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), 100, 1e11f, 10);
     Simulation sim(std::move(star));
 
-    sim.addObject(std::make_unique<Planet2D>(100, glm::vec2(30.0f, 0.0f), glm::vec2(0.0f, -0.3f), 3, 2));
-    sim.addObject(std::make_unique<Planet2D>(100, glm::vec2(-30.0f, 0.0f), glm::vec2(0.0f, 0.32f), 3, 2));
-    sim.addObject(std::make_unique<Planet2D>(100, glm::vec2(50.0f, 0.0f), glm::vec2(0.0f, -0.25f), 3, 2));
+    sim.addObject(std::make_unique<Planet>(glm::vec3(30.0f, 0.0f, 0.0f), glm::vec3(0.0f, -0.3f, 0.0f), 100, 3, 3));
+    sim.addObject(std::make_unique<Planet>(glm::vec3(-30.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.32f, 0.0f), 100, 3, 0.5));
+    sim.addObject(std::make_unique<Planet>(glm::vec3(50.0f, 0.0f, 0.0f), glm::vec3(0.0f, -0.25f, 0.0f), 100, 3, 1));
+    // sim.addObject(std::make_unique<Planet2D>(100, glm::vec2(-30.0f, 0.0f), glm::vec2(0.0f, 0.32f), 3, 2));
+    // sim.addObject(std::make_unique<Planet2D>(100, glm::vec2(50.0f, 0.0f), glm::vec2(0.0f, -0.25f), 3, 2));
 
     renderer.bufferObject(sim.star);
     for (std::unique_ptr<CelestialObject>& ptr : sim.planets) {
         renderer.bufferObject(ptr);
     }
 
-    // Uniform locations
-    int modelLocation = glGetUniformLocation(shaderProgram.ID, "model");
-    int viewLocation = glGetUniformLocation(shaderProgram.ID, "view");
-    int projectionLocation = glGetUniformLocation(shaderProgram.ID, "projection");
+    // glEnable(GL_DEPTH_TEST);
 
     while (!glfwWindowShouldClose(renderer.window)) {
         // Delta calculations
@@ -68,25 +72,18 @@ int main() {
         }
 
         // Read input
-        processInput(renderer.window);
+        processInput(renderer.window, renderer);
 
         // Clear screen
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Activate shader program
-        shaderProgram.use();
-        glm::mat4 projection = glm::ortho(-orthoDimensions * aspect.get(), orthoDimensions * aspect, -orthoDimensions, orthoDimensions, -1.0f, 1.0f);
-        glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
+        renderer.shader_setup();
 
-        // Coordinate matricies
-        glm::mat4 view = glm::mat4(1.0f);
-        glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
-
-
-        renderer.drawObject(sim.star, modelLocation);
+        renderer.drawObject(sim.star);
         for (std::unique_ptr<CelestialObject>& ptr : sim.planets) {
-            renderer.drawObject(ptr, modelLocation);
+            renderer.drawObject(ptr);
         }
 
         // Boilerplate
@@ -101,14 +98,34 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-void processInput(GLFWwindow* window) {
+void processInput(GLFWwindow* window, Renderer& renderer) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-        orthoDimensions += 0.5;
+    // if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+    //     shader.updateProjection(3.0f);
+    // }
+    // if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+    //     shader.updateProjection(-3.0f);
+    // }
+    //
+    float cameraSpeed = 50.0f * deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        renderer.update_camera_position(FORWARD, cameraSpeed);
     }
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        orthoDimensions -= 0.5;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        renderer.update_camera_position(BACKWARD, cameraSpeed);
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        renderer.update_camera_position(LEFT, cameraSpeed);
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        renderer.update_camera_position(RIGHT, cameraSpeed);
+    }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        renderer.update_camera_position(UP, cameraSpeed);
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+        renderer.update_camera_position(DOWN, cameraSpeed);
     }
 }

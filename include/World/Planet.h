@@ -11,28 +11,16 @@
 
 #include "World/CelestialObject.h"
 
-class Planet : virtual public CelestialObject {
+class Planet : public CelestialObject {
     public:
-
-
-    private:
-
-};
-
-class Planet2D : public CelestialObject2D, public Planet {
-    public:
-        Planet2D(int segments, glm::vec2 position, glm::vec2 velocity, float mass, float radius) :
-            CelestialObject(mass, radius),
-            CelestialObject2D(segments, position, velocity, mass, radius),
-            Planet()
+        Planet(glm::vec3 position, glm::vec3 velocity, int segments, float mass, float radius) :
+            CelestialObject(position, velocity, segments, mass, radius)
         {
 
         }
 
     private:
 
-
 };
-
 
 #endif //OPENGLPRACTICE_PLANET2D_H

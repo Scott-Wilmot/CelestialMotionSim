@@ -25,9 +25,6 @@ class Simulation {
         std::unique_ptr<CelestialObject> star;
 
         Simulation(std::unique_ptr<CelestialObject> star) {
-            if (dynamic_cast<Star*>(star.get()) == nullptr) {
-                throw std::runtime_error("ERROR IN Simulation.h: Non-star object passed as input parameter to constructor.");
-            }
             this->star = std::move(star);
         }
 
@@ -54,57 +51,12 @@ class Simulation {
 
                 glm::vec3 accel = force / planet->mass;
 
-                if (CelestialObject2D* c = dynamic_cast<CelestialObject2D*>(planet.get())) {
+                if (CelestialObject* c = dynamic_cast<CelestialObject*>(planet.get())) {
                     c->updateVelocity(accel);
                     c->updatePosition();
                 }
             }
         }
-
-};
-
-/*
- * Implement polymorphism at a later time
- */
-class Simulation2D {
-    public:
-        Star2D star;
-        std::vector<Planet2D> planets;
-
-        std::vector<std::unique_ptr<CelestialObject>> celestial_objects;
-
-        Simulation2D(Star2D star) : star(star) {
-
-        }
-
-        void addPlanet(Planet2D planet) {
-            planets.push_back(planet);
-        }
-
-        /*
-         * Calculates the amount of gravitaional acceleration a planet has from the star, changes the velocity, then updates position
-         */
-        void update(float delta) {
-            for (Planet2D& planet : planets) {
-                glm::vec2 r = star.position - planet.position;
-                float dist = glm::length(r);
-
-                if (dist == 0.0f) continue;
-                glm::vec2 dir = r / dist;
-
-                float G = 6.6743e-11f;
-                float f = (G * star.mass) / (dist * dist);
-                glm::vec2 force = dir * f;
-
-                glm::vec2 accel = force / planet.mass;
-                planet.velocity += glm::vec3(accel, 0);
-
-                planet.updatePosition();
-            }
-        }
-};
-
-class Simulation3D {
 
 };
 

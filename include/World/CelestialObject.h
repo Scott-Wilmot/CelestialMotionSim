@@ -15,30 +15,20 @@
 class CelestialObject {
     public:
         std::vector<float> NDC_coordinates;
+        std::vector<int> indices;
+
         glm::vec3 position;
         glm::vec3 velocity;
 
         float mass;
         float radius;
 
-        virtual ~CelestialObject() = default;
-
-        CelestialObject(float mass, float radius) {
+        CelestialObject(glm::vec3 position, glm::vec3 velocity, int segments, float mass, float radius) {
+            genNDCCoordinates(segments);
+            this->position = position;
+            this->velocity = velocity;
             this->mass = mass;
             this->radius = radius;
-        }
-
-    private:
-        virtual void genNDCCoordinates(int segments) = 0; // This makes CelestialObject abstract, cannon be directly instatntaied
-};
-
-class CelestialObject2D : virtual public CelestialObject {
-    public:
-        CelestialObject2D(int segments, glm::vec2 position, glm::vec2 velocity, float mass, float radius) :
-            CelestialObject(mass, radius) {
-                CelestialObject2D::genNDCCoordinates(segments);
-                this->position = glm::vec3(position, 0);
-                this->velocity = glm::vec3(velocity, 0);
         }
 
         void updatePosition() {
@@ -50,32 +40,46 @@ class CelestialObject2D : virtual public CelestialObject {
         }
 
     private:
-        void genNDCCoordinates(int segments) override {
-            segments = static_cast<float>(segments);
-            // Center of the circle points
-            NDC_coordinates.push_back(0.0f);    // X
-            NDC_coordinates.push_back(0.0f);    // Y
-            NDC_coordinates.push_back(0.0f);    // Z
-            // Generate ring points
-            for (float i = 0; i < segments; i++) {
-                float sin_coord = sin((2 * M_PI) * (i / segments));
-                float cos_coord = cos((2 * M_PI) * (i / segments));
-                NDC_coordinates.push_back(sin_coord);   // X
-                NDC_coordinates.push_back(cos_coord);   // Y
-                NDC_coordinates.push_back(0.0f);      // Z
+    void genNDCCoordinates(int segments) {
+        segments = static_cast<float>(segments);
+        // Center of sphere object
+        NDC_coordinates.push_back(0.0f);
+        NDC_coordinates.push_back(0.0f);
+        NDC_coordinates.push_back(0.0f);
+        // Actual sphere coordinates
+        for (float i = 0; i <= segments; i++) {
+            float phi = 2 * M_PI * i / segments;
+            for (float j = 0; j <= segments; j++) {
+                float theta = 2.0f * M_PI * j / segments;
+
+                float x = sin(phi) * cos(theta);
+                float y = cos(phi);
+                float z = sin(phi) * sin(theta);
+
+                NDC_coordinates.push_back(x);
+                NDC_coordinates.push_back(y);
+                NDC_coordinates.push_back(z);
             }
-            // Close ring
-            NDC_coordinates.push_back(NDC_coordinates[3]);
-            NDC_coordinates.push_back(NDC_coordinates[4]);
-            NDC_coordinates.push_back(NDC_coordinates[5]);
         }
+
+        for (int i = 0; i <= segments; i++) {
+            for (int j = 0; j <= segments; j++) {
+                int a = i * (segments + 1) + j;
+                int b = a + 1;
+                int c = a + (segments + 1);
+                int d = c + 1;
+
+                indices.push_back(a);
+                indices.push_back(c);
+                indices.push_back(b);
+
+                indices.push_back(b);
+                indices.push_back(c);
+                indices.push_back(d);
+            }
+        }
+    }
 };
 
-class CelestialObject3D : CelestialObject {
-    public:
-
-    private:
-    // Parametric equations
-};
 
 #endif //OPENGLPRACTICE_CELESTIALOBJECT_H
