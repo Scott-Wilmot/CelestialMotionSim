@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <cmath>
+#include <random>
 
 #include <glm/glm.hpp>
 
@@ -41,6 +42,12 @@ class CelestialObject {
 
     private:
     void genNDCCoordinates(int segments) {
+        // Random number generation for object noise gen
+        float noise = 0.0f;
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<float> distrib(1, 1 + noise);
+
         segments = static_cast<float>(segments);
         // Center of sphere object
         NDC_coordinates.push_back(0.0f);
@@ -52,9 +59,9 @@ class CelestialObject {
             for (float j = 0; j <= segments; j++) {
                 float theta = 2.0f * M_PI * j / segments;
 
-                float x = sin(phi) * cos(theta);
-                float y = cos(phi);
-                float z = sin(phi) * sin(theta);
+                float x = sin(phi) * cos(theta) * distrib(gen);
+                float y = cos(phi) * distrib(gen);
+                float z = sin(phi) * sin(theta) * distrib(gen);
 
                 NDC_coordinates.push_back(x);
                 NDC_coordinates.push_back(y);
