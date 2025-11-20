@@ -23,6 +23,9 @@ class Renderer {
 
         std::unordered_map<const CelestialObject*, unsigned int> vao_map;
 
+        // Object to VBO & VAO map for line buffers, VBO first, VAO second
+        std::unordered_map<const CelestialObject*, std::pair<unsigned int, unsigned int>> trail_map;
+
         Renderer(int SCR_WIDTH, int SCR_HEIGHT, float FOV) {
             this->SCR_WIDTH = SCR_WIDTH;
             this->SCR_HEIGHT = SCR_HEIGHT;
@@ -80,8 +83,8 @@ class Renderer {
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                object->indices.size() * sizeof(int),
-                object->indices.data(),
+                object->NDC_indices.size() * sizeof(int),
+                object->NDC_indices.data(),
                 GL_STATIC_DRAW
                 );
 
@@ -90,6 +93,20 @@ class Renderer {
 
             // Store ptr and VAO in map
             vao_map[object.get()] = VAO;
+
+            // Trail buffer initialization
+            unsigned int trailVBO, trailVAO;
+            glGenVertexArrays(1, &trailVAO);
+            glGenBuffers(1, &trailVBO);
+
+            glBindVertexArray(trailVAO);
+            glBindBuffer(GL_ARRAY_BUFFER, trailVBO);
+
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+            glEnableVertexAttribArray(0);
+
+            auto trail_buffers = std::pair<unsigned int, unsigned int>(trailVBO, trailVAO);
+            trail_map[object.get()] = trail_buffers;
 
             // Cleanup
             glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -120,7 +137,7 @@ class Renderer {
             // Draw the object
             // glDrawArrays(GL_TRIANGLE_FAN, 0, object->NDC_coordinates.size() / 3);
             // glPointSize(5.0f);
-            glDrawElements(GL_TRIANGLES, object->indices.size(), GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, object->NDC_indices.size(), GL_UNSIGNED_INT, 0);
             // glDrawArrays(GL_POINTS, 0, object->NDC_coordinates.size());
         }
 
@@ -130,20 +147,49 @@ class Renderer {
          * Grabs all keys from hashmap to get access to VAOs and relevant object data
          */
         void drawBuffers() {
-            for (const auto& object_ptr : vao_map) {
-                const CelestialObject object = *object_ptr.first;
+            for (const auto& object_ptr : vao_map) {    //OBJECT_PTR IS NOT A CORRECT NAME
+                // Object rendering
                 unsigned int VAO = object_ptr.second;
                 float radius = object_ptr.first->radius;
 
-                //
                 glBindVertexArray(VAO);
                 glm::mat4 model = glm::mat4(1.0f);
-                model = glm::translate(model, object.position);
+                model = glm::translate(model, object_ptr.first->position);
                 model = glm::scale(model, glm::vec3(radius, radius, radius));
                 shader->set_model(model);
 
-                glDrawElements(GL_TRIANGLES, object.indices.size(), GL_UNSIGNED_INT, 0);
+                glDrawElements(GL_TRIANGLES, object_ptr.first->NDC_indices.size(), GL_UNSIGNED_INT, 0);
+
+                //////////////////
+                // Trail rendering
+                //////////////////
+
+                // Set model uniform to identity matrix to stop line from moving with objects
+                model = glm::mat4(1.0f);
+                shader->set_model(model);
+
+                // Update the trail buffer
+                updateTrailBuffer(object_ptr.first);
+
+                // Get and draw the trail VAO
+                unsigned int trailVAO = trail_map[object_ptr.first].second; // Note: .second grabs the VAO from the pair value in the map
+                glBindVertexArray(trailVAO);
+                glDrawArrays(GL_LINE_STRIP, 0, object_ptr.first->trail_points.size());
             }
+        }
+
+        /**
+         * Method that updates the buffers present in line_map to reflect the current line points
+         */
+        void updateTrailBuffer(const CelestialObject* obj_ptr) {
+            unsigned int trailVBO = trail_map[obj_ptr].first;
+
+            // Pushes data to buffer, VAO automatically picks it up
+            glBindBuffer(GL_ARRAY_BUFFER, trailVBO);
+            glBufferData(GL_ARRAY_BUFFER,
+                obj_ptr->trail_points.size() * sizeof(glm::vec3),
+                obj_ptr->trail_points.data(),
+                GL_DYNAMIC_DRAW);
         }
 
         /**

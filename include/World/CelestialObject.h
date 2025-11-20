@@ -16,7 +16,9 @@
 class CelestialObject {
     public:
         std::vector<float> NDC_coordinates;
-        std::vector<int> indices;
+        std::vector<int> NDC_indices;
+        std::vector<glm::vec3> trail_points;
+
 
         glm::vec3 position;
         glm::vec3 velocity;
@@ -38,6 +40,13 @@ class CelestialObject {
 
         void updateVelocity(glm::vec3 acceleration) {
             this->velocity += acceleration;
+        }
+
+        /**
+         * This method takes the objects current position and pushes it into the trail_points vector
+         */
+        void addTrailPoint() {
+            trail_points.push_back(position);
         }
 
     private:
@@ -76,13 +85,13 @@ class CelestialObject {
                 int c = a + (segments + 1);
                 int d = c + 1;
 
-                indices.push_back(a);
-                indices.push_back(c);
-                indices.push_back(b);
+                NDC_indices.push_back(a);
+                NDC_indices.push_back(c);
+                NDC_indices.push_back(b);
 
-                indices.push_back(b);
-                indices.push_back(c);
-                indices.push_back(d);
+                NDC_indices.push_back(b);
+                NDC_indices.push_back(c);
+                NDC_indices.push_back(d);
             }
         }
     }

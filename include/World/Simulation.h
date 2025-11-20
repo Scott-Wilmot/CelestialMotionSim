@@ -1,10 +1,3 @@
-/*
- * Class intended to hold the information for the simulation space
- * This class should hold the following properties:
- *  - Central star
- *  - list of planets
- */
-
 #ifndef OPENGLPRACTICE_SIMULATION_H
 #define OPENGLPRACTICE_SIMULATION_H
 
@@ -34,31 +27,6 @@ class Simulation {
             objects.push_back(std::move(obj));
         }
 
-        // /**
-        //  * Implementation of object update, covering only planet objects.
-        //  * Star objects remain static with this implementation.
-        //  */
-        // void update() {
-        //     float G = 6.6743e-11f; // Newtons gravitiational constant
-        //     for (std::unique_ptr<CelestialObject>& planet : planets) {
-        //         glm::vec3 diff = star->position - planet->position;
-        //         float r = glm::length(diff);
-        //
-        //         if (r == 0.0f) continue;
-        //         glm::vec3 dir = diff / r;
-        //
-        //         float F = (G * star->mass) / (r * r);
-        //         glm::vec3 force = dir * F;
-        //
-        //         glm::vec3 accel = force / planet->mass;
-        //
-        //         if (CelestialObject* c = dynamic_cast<CelestialObject*>(planet.get())) {
-        //             c->updateVelocity(accel);
-        //             c->updatePosition();
-        //         }
-        //     }
-        // }
-
         /**
          * Implementation of simulation update that calculates the gravitational force of each object on every other object
          * This is a brute approach to the calculation, see FMM for more efficient methods for calculating a large number of objects
@@ -71,7 +39,6 @@ class Simulation {
                 for (auto& comparisonObj : objects) {
                     // Check if the objects are the same, if yes skip loop
                     if (focusObj == comparisonObj) {
-                        std::cout << "SAME OBJECT" << std::endl;
                         continue;
                     }
 
@@ -89,6 +56,16 @@ class Simulation {
             // Loop for updating the positions of each object after all velocities have been calculated
             for (auto& obj : objects) {
                 obj->updatePosition();
+            }
+        }
+
+        /**
+         * Method for adding a trail point to each object in the simulation
+         * Logged point is the objects current position
+         */
+        void logTrailPoints() {
+            for (auto& object : objects) {
+                object->addTrailPoint();
             }
         }
 

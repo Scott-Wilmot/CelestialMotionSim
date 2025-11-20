@@ -37,6 +37,7 @@ float aspect = (float)SCR_WIDTH / (float)SCR_HEIGHT;
 
 const double frameDuration = 1.0f / 60.0f;
 double lastFrame = 0.0f;
+double lastTrailTime = 0.0f;
 
 int segments = 25;
 
@@ -46,10 +47,13 @@ int main() {
 
     std::unique_ptr<Star> star = std::make_unique<Star>(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), segments, 1e11f, 10);
     Simulation sim;
-    sim.addObject(std::make_unique<Star>(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), segments, 1e11f, 10));
-    sim.addObject(std::make_unique<Planet>(glm::vec3(100.0f, 0.0f, 0.0f), glm::vec3(0.0f, -0.11f, 0.0f), segments, 1e10, 5));
-    sim.addObject(std::make_unique<Planet>(glm::vec3(40.0f, 0.0f, 0.0f), glm::vec3(0.0f, -0.42f, 0.0f), segments, 1e8, 0.3));
-    sim.addObject(std::make_unique<Planet>(glm::vec3(50.0f, 0.0f, 0.0f), glm::vec3(0.0f, -0.25f, 0.0f), segments, 5e8, 1));
+    // sim.addObject(std::make_unique<Star>(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), segments, 1e11f, 10));
+    // sim.addObject(std::make_unique<Planet>(glm::vec3(100.0f, 0.0f, 10.0f), glm::vec3(0.0f, -0.11f, 0.0f), segments, 1e10, 5));
+    // sim.addObject(std::make_unique<Planet>(glm::vec3(40.0f, 0.0f, 0.0f), glm::vec3(0.0f, -0.42f, 0.0f), segments, 1e8, 0.3));
+    // sim.addObject(std::make_unique<Planet>(glm::vec3(50.0f, 0.0f, 0.0f), glm::vec3(0.0f, -0.25f, 0.0f), segments, 5e8, 1));
+
+    sim.addObject(std::make_unique<Star>(glm::vec3(20, 0, 0), glm::vec3(0, 0, 0.3f), segments, 1e11f, 10));
+    sim.addObject(std::make_unique<Star>(glm::vec3(-20, 0, 0), glm::vec3(0, 0, -0.3f), segments, 1e11f, 10));
 
     for (std::unique_ptr<CelestialObject>& ptr : sim.objects) {
         renderer.bufferObject(ptr);
@@ -61,7 +65,16 @@ int main() {
         // Delta calculations
         double currentFrame = glfwGetTime();
         double timeSinceLastFrame = currentFrame - lastFrame;
+        double timeSinceLastTrail = currentFrame - lastTrailTime;
 
+        // Check if the time since last trail point was added has been passed
+        if (timeSinceLastTrail > 0.1f) {
+            sim.logTrailPoints();
+            // Update Renderer Line Buffers HERE
+            lastTrailTime = currentFrame;
+        }
+
+        // Check if the next frame is ready or if a sleep is needed
         if (timeSinceLastFrame < frameDuration) {
             double timeToNextFrame = frameDuration - timeSinceLastFrame;
             std::this_thread::sleep_for(std::chrono::duration<double>(timeToNextFrame));
