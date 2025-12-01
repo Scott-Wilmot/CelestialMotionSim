@@ -45,7 +45,7 @@ class Simulation {
                     glm::vec3 position_difference = comparisonObj->position - focusObj->position;
                     float radius = glm::length(position_difference);
 
-                    if (radius == 0.0f) continue;
+                    if (radius <= comparisonObj->radius + focusObj->radius) continue;
                     glm::vec3 direction_unit_vector = position_difference / radius;
                     glm::vec3 acceleration = (G * comparisonObj->mass * direction_unit_vector) / (radius * radius);
 

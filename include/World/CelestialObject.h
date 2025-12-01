@@ -13,12 +13,14 @@
 
 #include <glm/glm.hpp>
 
+#include "Data Structs/TrailBuffer.h"
+
 class CelestialObject {
     public:
         std::vector<float> NDC_coordinates;
         std::vector<int> NDC_indices;
-        std::vector<glm::vec3> trail_points;
-
+        // std::vector<glm::vec3> trail_points;
+        TrailBuffer trail_points;
 
         glm::vec3 position;
         glm::vec3 velocity;
@@ -26,12 +28,14 @@ class CelestialObject {
         float mass;
         float radius;
 
-        CelestialObject(glm::vec3 position, glm::vec3 velocity, int segments, float mass, float radius) {
+        CelestialObject(glm::vec3 position, glm::vec3 velocity, int segments, float mass, float radius, float pollTime, float trailDuration) : trail_points(pollTime, trailDuration) {
             genNDCCoordinates(segments);
             this->position = position;
             this->velocity = velocity;
             this->mass = mass;
             this->radius = radius;
+
+            trail_points.size();
         }
 
         void updatePosition() {
@@ -46,7 +50,7 @@ class CelestialObject {
          * This method takes the objects current position and pushes it into the trail_points vector
          */
         void addTrailPoint() {
-            trail_points.push_back(position);
+            trail_points.addTrailPoint(position);
         }
 
     private:

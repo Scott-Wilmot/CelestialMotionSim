@@ -21,7 +21,7 @@ set (EXECUTABLES
 
 # Create, link, and include for each executable file
 foreach (exec ${EXECUTABLES})
-    add_executable(${exec} src/${exec}.cpp)
+    add_executable(${exec} src/sim/${exec}.cpp)
     target_link_libraries(${exec} PRIVATE glad glfw OpenGL::GL)
     target_include_directories(${exec} PRIVATE external/glfw-3.4/include)
     target_include_directories(${exec} PRIVATE external/GLM-1.0.1)

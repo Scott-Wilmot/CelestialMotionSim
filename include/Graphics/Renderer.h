@@ -10,6 +10,7 @@
 
 #include "Graphics/Camera.h"
 #include "Graphics/Shader.h"
+#include "World/CelestialObject.h"
 
 class Renderer {
     public:
@@ -20,22 +21,26 @@ class Renderer {
         GLFWwindow* window;
         int SCR_WIDTH, SCR_HEIGHT; // Is there any reason to keep this? Aspect ratio shenanagains
         float ASPECT_RATIO;
+        float zoomFactor = 1.0f;
 
         std::unordered_map<const CelestialObject*, unsigned int> vao_map;
 
         // Object to VBO & VAO map for line buffers, VBO first, VAO second
         std::unordered_map<const CelestialObject*, std::pair<unsigned int, unsigned int>> trail_map;
 
-        Renderer(int SCR_WIDTH, int SCR_HEIGHT, float FOV) {
-            this->SCR_WIDTH = SCR_WIDTH;
-            this->SCR_HEIGHT = SCR_HEIGHT;
-
-            ASPECT_RATIO = (float)SCR_WIDTH / (float)SCR_HEIGHT;
-
+        Renderer(float FOV) {
             glfwInit();
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+            // Getting the monitor
+            GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+            const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+            SCR_WIDTH = mode->width;
+            SCR_HEIGHT = mode->height;
+            ASPECT_RATIO = (float)SCR_WIDTH / (float)SCR_HEIGHT;
 
             window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Engine", NULL, NULL);
             if (window == NULL) {
@@ -47,6 +52,7 @@ class Renderer {
             glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
             glfwSetWindowUserPointer(window, this);
             glfwSetCursorPosCallback(window, mouse_callback);
+            glfwSetScrollCallback(window, scroll_callback);
 
             // Set mouse input to GLFW window
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -61,7 +67,8 @@ class Renderer {
             camera = std::make_unique<Camera>(FOV, ASPECT_RATIO);
 
             glDisable(GL_CULL_FACE);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);  // Comment this line out for sphere view
+            glfwSetWindowPos(window, 0.0f, 0.0f);
         }
 
         void bufferObject(std::unique_ptr<CelestialObject>& object) {
@@ -154,8 +161,8 @@ class Renderer {
 
                 glBindVertexArray(VAO);
                 glm::mat4 model = glm::mat4(1.0f);
-                model = glm::translate(model, object_ptr.first->position);
-                model = glm::scale(model, glm::vec3(radius, radius, radius));
+                model = glm::translate(model, object_ptr.first->position / zoomFactor);
+                model = glm::scale(model, glm::vec3(radius, radius, radius) / zoomFactor);
                 shader->set_model(model);
 
                 glDrawElements(GL_TRIANGLES, object_ptr.first->NDC_indices.size(), GL_UNSIGNED_INT, 0);
@@ -169,7 +176,7 @@ class Renderer {
                 shader->set_model(model);
 
                 // Update the trail buffer
-                updateTrailBuffer(object_ptr.first);
+                updateTrailBuffer(object_ptr.first, zoomFactor);
 
                 // Get and draw the trail VAO
                 unsigned int trailVAO = trail_map[object_ptr.first].second; // Note: .second grabs the VAO from the pair value in the map
@@ -181,14 +188,20 @@ class Renderer {
         /**
          * Method that updates the buffers present in line_map to reflect the current line points
          */
-        void updateTrailBuffer(const CelestialObject* obj_ptr) {
+        void updateTrailBuffer(const CelestialObject* obj_ptr, float zoomFactor) {
             unsigned int trailVBO = trail_map[obj_ptr].first;
+            std::vector<glm::vec3> zoomed_points;
+
+            std::vector<glm::vec3> trail_pts = obj_ptr->trail_points.trail_points;
+            for (const auto& position_vec : trail_pts) {
+                zoomed_points.push_back(position_vec / zoomFactor);
+            }
 
             // Pushes data to buffer, VAO automatically picks it up
             glBindBuffer(GL_ARRAY_BUFFER, trailVBO);
             glBufferData(GL_ARRAY_BUFFER,
                 obj_ptr->trail_points.size() * sizeof(glm::vec3),
-                obj_ptr->trail_points.data(),
+                zoomed_points.data(),
                 GL_DYNAMIC_DRAW);
         }
 
@@ -219,6 +232,23 @@ class Renderer {
         static void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
             Renderer* renderer = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
             renderer->callCameraMouse(xpos, ypos);
+        }
+
+        static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+            Renderer* renderer = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
+            if (renderer) {
+                renderer->onScroll(xoffset, yoffset);
+            }
+        }
+
+        void onScroll(double xOffset, double yOffset) {
+            // zoomFactor *= 0.99;
+            if (yOffset > 0) {  // Indicates up scroll
+                zoomFactor *= 0.9f; // Shrink distances, "zoom in"
+            }
+            if (yOffset < 0) {  // Indicates down scroll
+                zoomFactor *= 1.1f; // Widen distances, "zoom out"1
+            }
         }
 
         void callCameraMouse(double xpos, double ypos) {

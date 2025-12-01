@@ -42,7 +42,7 @@ class Camera {
             glm::radians(FOV),
             ASPECT_RATIO,
             0.1f,
-            10000.0f
+            1e5f
         );
     }
 
@@ -52,6 +52,15 @@ class Camera {
             cameraPos + cameraFront,
             cameraUp
             );
+    }
+
+    void update_projection_matrix() {
+        projection = glm::perspective(
+            glm::radians(FOV),
+            ASPECT_RATIO,
+            0.1f,
+            1e5f
+        );
     }
 
     void update_camera_position(CameraMovement direction, float cameraSpeed) {
