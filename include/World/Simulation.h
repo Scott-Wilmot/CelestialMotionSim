@@ -3,6 +3,10 @@
 
 #include <vector>
 #include <memory>
+#include <fstream>
+
+#include <json.hpp>
+using json = nlohmann::json;
 
 #include "Planet.h"
 #include "Star.h"
@@ -20,6 +24,28 @@ class Simulation {
 
         Simulation() {
 
+        }
+
+        /**
+         * Process a JSON file with object data into simulation objects automatically
+         */
+        void jsonToObjects() {
+            std::ifstream jsonFile("..\\planetData\\objects.json");
+            json data = json::parse(jsonFile);
+            for (auto object : data["objects"]) {
+                double mass = object["mass"];
+                double radius = object["radius"]; radius *= 1000;
+                glm::vec3 position = glm::vec3(object["X"], object["Y"], object["Z"]); position *= 1000;
+                glm::vec3 velocity = glm::vec3(object["VX"], object["VY"], object["VZ"]); velocity *= 1000;
+
+                std::cout << object["name"] << std::endl
+                    << mass << std::endl
+                    << radius << std::endl
+                    << position.x << ", " << position.y << ", " << position.z << std::endl
+                    << velocity.x << ", " << velocity.y << ", " << velocity.z << std::endl << std::endl;
+
+                addObject(std::make_unique<CelestialObject>(position, velocity, 30, mass, radius, 0.1f, 5.0f));
+            }
         }
 
         // Trade ownership of the object pointer to the array

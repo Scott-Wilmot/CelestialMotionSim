@@ -39,11 +39,17 @@ class CelestialObject {
         }
 
         void updatePosition() {
-            this->position += this->velocity;
+            // this->position += this->velocity;
+            auto vel = this->velocity;
+            vel *= 1440;
+            this->position += vel;
         }
 
         void updateVelocity(glm::vec3 acceleration) {
-            this->velocity += acceleration;
+            // this->velocity += acceleration;
+            auto acc = acceleration;
+            acc *= 1440;
+            this->velocity += acc;
         }
 
         /**

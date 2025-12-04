@@ -28,14 +28,14 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window, Renderer& renderer);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
-const double frameDuration = 1.0f / 144.0f;
+const double frameDuration = 1.0f / 60.0f;
 double lastFrame = 0.0f;
 
 double trailPollTime = 0.05f;
-double trailDuration = 5.0f;
+double trailDuration = 3.0f;
 double lastTrailTime = 0.0f;
 
-int segments = 50;
+int segments = 15;
 
 int main() {
 
@@ -43,10 +43,12 @@ int main() {
 
     // std::unique_ptr<Star> star = std::make_unique<Star>(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), segments, 1e11f, 10);
     Simulation sim;
-    sim.addObject(std::make_unique<Star>(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), segments, 1e11f, 10, trailPollTime, trailDuration));
-    sim.addObject(std::make_unique<Planet>(glm::vec3(10.0f, 0.0f, 100.0f), glm::vec3(-0.11f, 0.0f, 0.0f), segments, 1e10, 5, trailPollTime, trailDuration));
-    sim.addObject(std::make_unique<Planet>(glm::vec3(40.0f, 0.0f, 0.0f), glm::vec3(0.0f, -0.42f, 0.0f), segments, 1e8, 0.3, trailPollTime, trailDuration));
-    sim.addObject(std::make_unique<Planet>(glm::vec3(50.0f, 0.0f, 0.0f), glm::vec3(0.0f, -0.25f, 0.0f), segments, 5e8, 1, trailPollTime, trailDuration));
+    sim.jsonToObjects();
+
+    // sim.addObject(std::make_unique<Star>(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), segments, 1e11f, 10, trailPollTime, trailDuration));
+    // sim.addObject(std::make_unique<Planet>(glm::vec3(10.0f, 0.0f, 100.0f), glm::vec3(-0.11f, 0.0f, 0.0f), segments, 1e10, 5, trailPollTime, trailDuration));
+    // sim.addObject(std::make_unique<Planet>(glm::vec3(40.0f, 0.0f, 0.0f), glm::vec3(0.0f, -0.42f, 0.0f), segments, 1e8, 0.3, trailPollTime, trailDuration));
+    // sim.addObject(std::make_unique<Planet>(glm::vec3(50.0f, 0.0f, 0.0f), glm::vec3(0.0f, -0.25f, 0.0f), segments, 5e8, 1, trailPollTime, trailDuration));
 
     // sim.addObject(std::make_unique<Star>(glm::vec3(20, 0, 0), glm::vec3(0, 0, 0.3f), segments, 1e11f, 10, trailPollTime, trailDuration));
     // sim.addObject(std::make_unique<Star>(glm::vec3(-20, 0, 0), glm::vec3(0, 0, -0.3f), segments, 1e11f, 10, trailPollTime, trailDuration));
@@ -110,7 +112,7 @@ void processInput(GLFWwindow* window, Renderer& renderer) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 
-    float cameraSpeed = 5.0f;
+    float cameraSpeed = 100000;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         renderer.update_camera_position(FORWARD, cameraSpeed);
     }

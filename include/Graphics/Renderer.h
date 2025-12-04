@@ -161,7 +161,9 @@ class Renderer {
 
                 glBindVertexArray(VAO);
                 glm::mat4 model = glm::mat4(1.0f);
-                model = glm::translate(model, object_ptr.first->position / zoomFactor);
+                // model = glm::translate(model, object_ptr.first->position / zoomFactor);
+                model = glm::translate(model, compressSqrt(object_ptr.first->position, zoomFactor));
+                // model = glm::scale(model, glm::vec3(radius, radius, radius) / (float)pow(zoomFactor, 1.10f));
                 model = glm::scale(model, glm::vec3(radius, radius, radius) / zoomFactor);
                 shader->set_model(model);
 
@@ -183,6 +185,13 @@ class Renderer {
                 glBindVertexArray(trailVAO);
                 glDrawArrays(GL_LINE_STRIP, 0, object_ptr.first->trail_points.size());
             }
+        }
+
+        glm::vec3 compressSqrt(const glm::vec3& pos, float scale) {
+            float r = glm::length(pos);
+            if (r == 0.0f) return pos;
+            float r_c = sqrt(r) * scale;
+            return glm::normalize(pos) * r_c;
         }
 
         /**
@@ -208,7 +217,7 @@ class Renderer {
         /**
          * This function activates the Shader program from the Shader object
          * This function sets the uniforms for view and projection in the Shader class
-         * Does this function need to update the matricies before using them to update the uniforms? I think so.
+         * Does this function need to update the matrices before using them to update the uniforms? I think so.
          */
         void shader_setup() {
             shader->use();
