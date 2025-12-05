@@ -122,33 +122,6 @@ class Renderer {
 
 
         /**
-         * Draws a single object passed in as a parameter.
-         * Requires an external for loop to go through all objects in the simulation.
-         * Future Deprecation: All object and VAO data is stored in the local hashmap, data is not changed, why not just cycle through keys and render all with a single method call?
-         * @param object
-         * @deprecated This method has been replaced with the drawBuffers() method
-         * @see Renderer::drawBuffers()
-         */
-        void drawObject(std::unique_ptr<CelestialObject>& object) {
-            // Get the parameter pointer objects associated VAO
-            unsigned int VAO = vao_map[object.get()];
-            float r = object->radius;
-
-            // Apply objects model matrix to Shader
-            glBindVertexArray(VAO);
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, object->position);
-            model = glm::scale(model, glm::vec3(r, r, r));
-            shader->set_model(model);
-
-            // Draw the object
-            // glDrawArrays(GL_TRIANGLE_FAN, 0, object->NDC_coordinates.size() / 3);
-            // glPointSize(5.0f);
-            glDrawElements(GL_TRIANGLES, object->NDC_indices.size(), GL_UNSIGNED_INT, 0);
-            // glDrawArrays(GL_POINTS, 0, object->NDC_coordinates.size());
-        }
-
-        /**
          * Intended replacement for drawObject()
          * Does not change any buffer data, rather accesses and draws all vaos with object data considered.
          * Grabs all keys from hashmap to get access to VAOs and relevant object data
@@ -161,10 +134,13 @@ class Renderer {
 
                 glBindVertexArray(VAO);
                 glm::mat4 model = glm::mat4(1.0f);
-                // model = glm::translate(model, object_ptr.first->position / zoomFactor);
-                model = glm::translate(model, compressSqrt(object_ptr.first->position, zoomFactor));
+                glm::vec3 rel_pos = object_ptr.first->position - camera->cameraPos;
+                // model = glm::translate(model, object_ptr.first->position / zoomFactor); // Linear scaling
+                // model = glm::translate(model, compressSqrt(object_ptr.first->position, zoomFactor)); // Sqrt scaling
+                model = glm::translate(model, compressSqrt(rel_pos, zoomFactor)); // relative camera positioning w/ sqrt
                 // model = glm::scale(model, glm::vec3(radius, radius, radius) / (float)pow(zoomFactor, 1.10f));
-                model = glm::scale(model, glm::vec3(radius, radius, radius) / zoomFactor);
+                // model = glm::scale(model, glm::vec3(radius, radius, radius) / zoomFactor);
+                model = glm::scale(model, compressSqrt(glm::vec3(radius, radius, radius), pow(zoomFactor, 1.05)));
                 shader->set_model(model);
 
                 glDrawElements(GL_TRIANGLES, object_ptr.first->NDC_indices.size(), GL_UNSIGNED_INT, 0);

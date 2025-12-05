@@ -17,14 +17,17 @@
 
 class CelestialObject {
     public:
+        // Rendering vars
+        unsigned int vertices_VAO;
+        unsigned int trail_VAO;
+        unsigned int billboard_VAO;
         std::vector<float> NDC_coordinates;
         std::vector<int> NDC_indices;
-        // std::vector<glm::vec3> trail_points;
         TrailBuffer trail_points;
 
+        // Simulation data
         glm::vec3 position;
         glm::vec3 velocity;
-
         float mass;
         float radius;
 
@@ -41,14 +44,14 @@ class CelestialObject {
         void updatePosition() {
             // this->position += this->velocity;
             auto vel = this->velocity;
-            vel *= 1440;
+            vel *= 1440 * 10;
             this->position += vel;
         }
 
         void updateVelocity(glm::vec3 acceleration) {
             // this->velocity += acceleration;
             auto acc = acceleration;
-            acc *= 1440;
+            acc *= 1440 * 10;
             this->velocity += acc;
         }
 

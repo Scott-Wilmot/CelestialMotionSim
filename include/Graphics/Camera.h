@@ -41,7 +41,7 @@ class Camera {
         projection = glm::perspective(
             glm::radians(FOV),
             ASPECT_RATIO,
-            0.1f,
+            100.0f,
             1e15f
         );
     }

@@ -21,7 +21,6 @@ target_include_directories(nlohmann_json INTERFACE external)
 # Define executable names
 set (EXECUTABLES
         main
-        test
 )
 
 # Create, link, and include for each executable file
