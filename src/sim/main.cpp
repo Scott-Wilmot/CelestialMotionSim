@@ -89,8 +89,7 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Activate shader program
-        renderer.shader_setup();
-        renderer.drawBuffers();
+        renderer.drawBuffers(sim);
 
         // Update last time on successful frame gen
         lastFrame = glfwGetTime();

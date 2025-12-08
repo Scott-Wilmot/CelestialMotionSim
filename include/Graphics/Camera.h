@@ -10,12 +10,15 @@
 class Camera {
   public:
     // Something constants
+    float SCR_WIDTH;
+    float SCR_HEIGHT;
     float ASPECT_RATIO;
     float FOV;
 
     // ___ matricies
     glm::mat4 view;
-    glm::mat4 projection;
+    glm::mat4 perspective_projection;
+    glm::mat4 ortho_projection;
 
     // Camera matricies
     glm::vec3 cameraPos = glm::vec3(0.0f, 10.0f, 100.0f);
@@ -29,22 +32,30 @@ class Camera {
     float lastX = 800.0f / 2.0;
     float lastY = 600.0f / 2.0;
 
-    Camera(float FOV, float ASPECT_RATIO) {
+
+    Camera(float FOV, float SCR_WIDTH, float SCR_HEIGHT) {
         this->FOV = FOV;
-        this->ASPECT_RATIO = ASPECT_RATIO;
+        this->ASPECT_RATIO = SCR_WIDTH / SCR_HEIGHT;
 
         view = glm::lookAt(
             cameraPos,
             cameraPos + cameraFront,
             cameraUp
             );
-        projection = glm::perspective(
+        perspective_projection = glm::perspective(
             glm::radians(FOV),
             ASPECT_RATIO,
             100.0f,
-            1e15f
-        );
+            1e10f
+            );
+        ortho_projection = glm::ortho(
+            0.0f,
+            SCR_WIDTH,
+            0.0f,
+            SCR_HEIGHT
+            );
     }
+
 
     void update_view_matrix() {
         view = glm::lookAt(
@@ -54,14 +65,6 @@ class Camera {
             );
     }
 
-    void update_projection_matrix() {
-        projection = glm::perspective(
-            glm::radians(FOV),
-            ASPECT_RATIO,
-            1.0f,
-            1e5f
-        );
-    }
 
     void update_camera_position(CameraMovement direction, float cameraSpeed) {
         if (direction == FORWARD)
@@ -76,7 +79,10 @@ class Camera {
             cameraPos -= cameraSpeed * cameraUp;
         if (direction == UP)
             cameraPos += cameraSpeed * cameraUp;
+
+        update_view_matrix();
     }
+
 
     void mouse_callback(double xpos, double ypos) {
         if (firstMouse) {
@@ -109,7 +115,10 @@ class Camera {
         direction.y = sin(glm::radians(pitch));
         direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
         cameraFront = glm::normalize(direction);
+
+        update_view_matrix(); // Update the camera view matrix to account for the change
     }
+
 
 };
 

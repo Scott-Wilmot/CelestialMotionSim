@@ -23,11 +23,6 @@ class Renderer {
         float ASPECT_RATIO;
         float zoomFactor = 1.0f;
 
-        std::unordered_map<const CelestialObject*, unsigned int> vao_map;
-
-        // Object to VBO & VAO map for line buffers, VBO first, VAO second
-        std::unordered_map<const CelestialObject*, std::pair<unsigned int, unsigned int>> trail_map;
-
         Renderer(float FOV) {
             glfwInit();
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -63,8 +58,11 @@ class Renderer {
             }
 
             shader = std::make_unique<Shader>("..\\shaders\\vertex.glsl",
-                "..\\shaders\\fragment.glsl", ASPECT_RATIO);
-            camera = std::make_unique<Camera>(FOV, ASPECT_RATIO);
+                "..\\shaders\\fragment.glsl",
+                "..\\shaders\\billboard.glsl",
+                ASPECT_RATIO
+                );
+            camera = std::make_unique<Camera>(FOV, SCR_WIDTH, SCR_HEIGHT);
 
             glDisable(GL_CULL_FACE);
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);  // Comment this line out for sphere view
@@ -99,7 +97,7 @@ class Renderer {
             glEnableVertexAttribArray(0);
 
             // Store ptr and VAO in map
-            vao_map[object.get()] = VAO;
+            object->vertices_VAO = VAO;
 
             // Trail buffer initialization
             unsigned int trailVBO, trailVAO;
@@ -112,8 +110,24 @@ class Renderer {
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
             glEnableVertexAttribArray(0);
 
-            auto trail_buffers = std::pair<unsigned int, unsigned int>(trailVBO, trailVAO);
-            trail_map[object.get()] = trail_buffers;
+            object->trail_VBO = trailVBO;
+            object->trail_VAO = trailVAO;
+
+            ////////////////////
+            // VAO for billboard object
+            ////////////////////
+            unsigned int billboardVBO, billboardVAO;
+            glGenVertexArrays(1, &billboardVAO);
+            glGenBuffers(1, &billboardVBO);
+
+            glBindVertexArray(billboardVAO);
+            glBindBuffer(GL_ARRAY_BUFFER, billboardVBO);
+            glBufferData(GL_ARRAY_BUFFER, object->billboard_coordinates.size() * sizeof(float), object->billboard_coordinates.data(), GL_STATIC_DRAW);
+
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+            glEnableVertexAttribArray(0);
+
+            object->billboard_VAO = billboardVAO;
 
             // Cleanup
             glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -126,24 +140,28 @@ class Renderer {
          * Does not change any buffer data, rather accesses and draws all vaos with object data considered.
          * Grabs all keys from hashmap to get access to VAOs and relevant object data
          */
-        void drawBuffers() {
-            for (const auto& object_ptr : vao_map) {    //OBJECT_PTR IS NOT A CORRECT NAME
+        void drawBuffers(Simulation& sim) {
+            for (const auto& object : sim.objects) {    //OBJECT_PTR IS NOT A CORRECT NAME
                 // Object rendering
-                unsigned int VAO = object_ptr.second;
-                float radius = object_ptr.first->radius;
+                float radius = object->radius;
 
-                glBindVertexArray(VAO);
+                // shader->set_projection(camera->perspective_projection);
+
+                // Draw sphere
+                glBindVertexArray(object->vertices_VAO);
                 glm::mat4 model = glm::mat4(1.0f);
-                glm::vec3 rel_pos = object_ptr.first->position - camera->cameraPos;
+                glm::vec3 rel_pos = object->position - camera->cameraPos;
                 // model = glm::translate(model, object_ptr.first->position / zoomFactor); // Linear scaling
                 // model = glm::translate(model, compressSqrt(object_ptr.first->position, zoomFactor)); // Sqrt scaling
                 model = glm::translate(model, compressSqrt(rel_pos, zoomFactor)); // relative camera positioning w/ sqrt
                 // model = glm::scale(model, glm::vec3(radius, radius, radius) / (float)pow(zoomFactor, 1.10f));
                 // model = glm::scale(model, glm::vec3(radius, radius, radius) / zoomFactor);
                 model = glm::scale(model, compressSqrt(glm::vec3(radius, radius, radius), pow(zoomFactor, 1.05)));
-                shader->set_model(model);
+                // shader->set_model(model);
 
-                glDrawElements(GL_TRIANGLES, object_ptr.first->NDC_indices.size(), GL_UNSIGNED_INT, 0);
+                use_vertex(model, camera->view, camera);
+
+                glDrawElements(GL_TRIANGLES, object->NDC_indices.size(), GL_UNSIGNED_INT, 0);
 
                 //////////////////
                 // Trail rendering
@@ -154,12 +172,18 @@ class Renderer {
                 shader->set_model(model);
 
                 // Update the trail buffer
-                updateTrailBuffer(object_ptr.first, zoomFactor);
+                updateTrailBuffer(object.get(), zoomFactor);
 
                 // Get and draw the trail VAO
-                unsigned int trailVAO = trail_map[object_ptr.first].second; // Note: .second grabs the VAO from the pair value in the map
+                unsigned int trailVAO = object->trail_VAO; // Note: .second grabs the VAO from the pair value in the map
                 glBindVertexArray(trailVAO);
-                glDrawArrays(GL_LINE_STRIP, 0, object_ptr.first->trail_points.size());
+                glDrawArrays(GL_LINE_STRIP, 0, object->trail_points.size());
+
+                // 2D screen space renders
+                shader->set_projection(camera->ortho_projection);
+
+                glBindVertexArray(object->billboard_VAO);
+                glDrawArrays(GL_TRIANGLE_FAN, 0, object->billboard_coordinates.size());
             }
         }
 
@@ -173,11 +197,11 @@ class Renderer {
         /**
          * Method that updates the buffers present in line_map to reflect the current line points
          */
-        void updateTrailBuffer(const CelestialObject* obj_ptr, float zoomFactor) {
-            unsigned int trailVBO = trail_map[obj_ptr].first;
+        void updateTrailBuffer(const CelestialObject* object, float zoomFactor) {
+            unsigned int trailVBO = object->trail_VBO;
             std::vector<glm::vec3> zoomed_points;
 
-            std::vector<glm::vec3> trail_pts = obj_ptr->trail_points.trail_points;
+            std::vector<glm::vec3> trail_pts = object->trail_points.trail_points;
             for (const auto& position_vec : trail_pts) {
                 zoomed_points.push_back(position_vec / zoomFactor);
             }
@@ -185,7 +209,7 @@ class Renderer {
             // Pushes data to buffer, VAO automatically picks it up
             glBindBuffer(GL_ARRAY_BUFFER, trailVBO);
             glBufferData(GL_ARRAY_BUFFER,
-                obj_ptr->trail_points.size() * sizeof(glm::vec3),
+                object->trail_points.size() * sizeof(glm::vec3),
                 zoomed_points.data(),
                 GL_DYNAMIC_DRAW);
         }
@@ -194,14 +218,22 @@ class Renderer {
          * This function activates the Shader program from the Shader object
          * This function sets the uniforms for view and projection in the Shader class
          * Does this function need to update the matrices before using them to update the uniforms? I think so.
+         * @deprecated Replaced with use_vertex() and use_billboard()
+         * @see use_vertex() & use_billboard()
          */
         void shader_setup() {
             shader->use();
 
             camera->update_view_matrix();
             shader->set_view(camera->view);
+        }
 
-            shader->set_projection(camera->projection);
+        void use_vertex(glm::mat4 model, glm::mat4 view, glm::mat4 projection) {
+            shader->use_vertex(model, view, projection);
+        }
+
+        void use_billboard(glm::mat4 ortho, float billboardSize, glm::vec2 screenPosition) {
+            shader->use_billboard(ortho, billboardSize, screenPosition);
         }
 
         void update_camera_position(CameraMovement direction, float cameraSpeed) const {

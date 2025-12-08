@@ -19,6 +19,7 @@ objects = [
     'Neptune',
     'Pluto',
     'Moon',
+    'Europa'
 ]
 
 # Mappings of obj to its ID for the horizons API request, dict populated by the lookup table step
@@ -50,12 +51,15 @@ for obj in objects:
     else:
         raise ValueError("Object, " + obj + " not found")
 
+
 print('\n\n')
 mass_list = []
 radius_list = []
 pv_list = []
 # Search all object ids in the Horizons API for object data
 for entry in object_ids:
+    print("QUEUING: " + entry)
+
     id = object_ids[entry]
 
     params = {
@@ -111,6 +115,6 @@ for entry in object_ids:
         print("REQUEST ERROR: " + request.status_code)
 
 
-out_file_name = 'objects.json'
+out_file_name = '../planetData/objects.json'
 with open(out_file_name, 'w') as outfile:
     json.dump(json_dict, outfile, indent=4)
