@@ -9,7 +9,7 @@ uniform vec2 screenPosition; // In pixels
 out vertColor;
 
 void main() {
-    vec2 centered = (aPos + vec2(0.5)) * billboardSize;
+    vec2 centered = (aPos + vec2(0.5)) * billboardSize; //
 
     vec2 worldPos = screenPosition + centered;
 

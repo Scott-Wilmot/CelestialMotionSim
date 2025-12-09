@@ -52,7 +52,7 @@ class Camera {
             0.0f,
             SCR_WIDTH,
             0.0f,
-            SCR_HEIGHT
+            SCR_HEIGHT, -1.0f, 1.0f
             );
     }
 

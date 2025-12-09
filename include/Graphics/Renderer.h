@@ -151,15 +151,16 @@ class Renderer {
                 glBindVertexArray(object->vertices_VAO);
                 glm::mat4 model = glm::mat4(1.0f);
                 glm::vec3 rel_pos = object->position - camera->cameraPos;
+                glm::vec3 compressedPosition = compressSqrt(rel_pos, zoomFactor);
                 // model = glm::translate(model, object_ptr.first->position / zoomFactor); // Linear scaling
                 // model = glm::translate(model, compressSqrt(object_ptr.first->position, zoomFactor)); // Sqrt scaling
-                model = glm::translate(model, compressSqrt(rel_pos, zoomFactor)); // relative camera positioning w/ sqrt
+                model = glm::translate(model, compressedPosition); // relative camera positioning w/ sqrt
                 // model = glm::scale(model, glm::vec3(radius, radius, radius) / (float)pow(zoomFactor, 1.10f));
                 // model = glm::scale(model, glm::vec3(radius, radius, radius) / zoomFactor);
                 model = glm::scale(model, compressSqrt(glm::vec3(radius, radius, radius), pow(zoomFactor, 1.05)));
                 // shader->set_model(model);
 
-                use_vertex(model, camera->view, camera);
+                use_vertex(model, camera->view, camera->perspective_projection);
 
                 glDrawElements(GL_TRIANGLES, object->NDC_indices.size(), GL_UNSIGNED_INT, 0);
 
@@ -180,10 +181,21 @@ class Renderer {
                 glDrawArrays(GL_LINE_STRIP, 0, object->trail_points.size());
 
                 // 2D screen space renders
-                shader->set_projection(camera->ortho_projection);
+                // shader->set_projection(camera->ortho_projection);
+                glm::vec4 clip = camera->perspective_projection * camera->view * glm::vec4(compressedPosition, 1.0f);
+                // if (clip.w <= 0.0f) return;
+
+                glm::vec3 ndc = glm::vec3(clip) / clip.w;
+
+                // float screenX = (ndc.x * 0.5f + 0.5f) * SCR_WIDTH;
+                // float screenY = (ndc.y * 0.5f + 0.5f) * SCR_HEIGHT;
+                float screenX = 100;
+                float screenY = 100;
+
+                use_billboard(camera->ortho_projection, 10, glm::vec2(screenX, screenY));
 
                 glBindVertexArray(object->billboard_VAO);
-                glDrawArrays(GL_TRIANGLE_FAN, 0, object->billboard_coordinates.size());
+                glDrawArrays(GL_TRIANGLE_FAN, 0, object->billboard_coordinates.size() / 3);
             }
         }
 
@@ -223,9 +235,8 @@ class Renderer {
          */
         void shader_setup() {
             shader->use();
-
-            camera->update_view_matrix();
             shader->set_view(camera->view);
+            shader->set_projection(camera->perspective_projection);
         }
 
         void use_vertex(glm::mat4 model, glm::mat4 view, glm::mat4 projection) {
