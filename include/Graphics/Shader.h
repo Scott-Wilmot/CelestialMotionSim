@@ -13,7 +13,7 @@ public:
     unsigned int vertexProgram, billboardProgram;
 
     // Shader Uniform Locations for vertex.glsl
-    int worldPosLocation, viewLocation, projectionLocation, cameraPosLocation;
+    int modelLocation, viewLocation, projectionLocation;
 
     // Shader Uniform Locations for billboard.glsl
     int orthoLocation, billboardSizeLocation, screenPositionLocation;
@@ -94,10 +94,9 @@ public:
         glDeleteShader(bFragment);
 
         // Shader uniform initialization
-        worldPosLocation = glGetUniformLocation(vertexProgram, "worldPos");
+        modelLocation = glGetUniformLocation(vertexProgram, "model");
         viewLocation = glGetUniformLocation(vertexProgram, "view");
         projectionLocation = glGetUniformLocation(vertexProgram, "projection");
-        cameraPosLocation = glGetUniformLocation(vertexProgram, "cameraPos");
 
         orthoLocation = glGetUniformLocation(billboardProgram, "ortho");
         billboardSizeLocation = glGetUniformLocation(billboardProgram, "billboardSize");
@@ -110,10 +109,9 @@ public:
         glUseProgram(vertexProgram);
     }
 
-    void use_vertex(glm::vec3 cameraPos, glm::vec3 worldPos, glm::mat4 view, glm::mat4 projection) {
+    void use_vertex(glm::mat4 model, glm::mat4 view, glm::mat4 projection) {
         glUseProgram(vertexProgram);
-        glUniform3fv(cameraPosLocation, 1, glm::value_ptr(cameraPos));
-        glUniform3fv(worldPosLocation, 1, glm::value_ptr(worldPos));
+        glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
     }
@@ -125,8 +123,8 @@ public:
     }
 
     // Shader Uniform Setters
-    void set_world_pos(glm::mat4 model) {
-        glUniform3fv(worldPosLocation, 1, glm::value_ptr(model));
+    void set_model(glm::mat4 model) {
+        glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
     }
     void set_view(glm::mat4 view) {
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));

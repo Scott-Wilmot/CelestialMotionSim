@@ -146,14 +146,12 @@ class Renderer {
                 // Object rendering
                 float radius = object->radius;
 
-                // shader->set_projection(camera->perspective_projection);
-
-                // Draw sphere
                 glm::mat4 model = glm::mat4(1.0f);
-                glm::vec3 rel_pos = object->position - camera->cameraPos;
-                glm::vec3 compressedPosition = compressSqrt(rel_pos, zoomFactor);
-                model = glm::translate(model, compressedPosition); // relative camera positioning w/ sqrt
-                model = glm::scale(model, compressSqrt(glm::vec3(radius, radius, radius), pow(zoomFactor, 1.05)));
+                glm::vec3 relative_pos = object->position - camera->cameraPos;
+                glm::vec3 compressedPosition = compressSqrt(relative_pos, pow(zoomFactor, 1.5));
+                glm::vec3 compressedRadius = compressSqrt(glm::vec3(radius), pow(zoomFactor, 1.5));
+                model = glm::translate(model, relative_pos / zoomFactor);
+                model = glm::scale(model, glm::vec3(radius) / zoomFactor);
 
                 use_vertex(model, camera->view, camera->perspective_projection);
 
@@ -163,22 +161,9 @@ class Renderer {
                 //////////////////
                 // Trail rendering
                 //////////////////
-
-                // // Set model uniform to identity matrix to stop line from moving with objects
-                // model = glm::mat4(1.0f);
-                // shader->set_model(model);
-                //
-                // // Update the trail buffer
-                // updateTrailBuffer(object.get());
-                //
-                // // Get and draw the trail VAO
-                // unsigned int trailVAO = object->trail_VAO; // Note: .second grabs the VAO from the pair value in the map
-                // glBindVertexArray(trailVAO);
-                // glDrawArrays(GL_LINE_STRIP, 0, object->trail_points.size());
-                // Draw planet trails
-                model = glm::translate(glm::mat4(1.0f), compressedPosition); // BAD CODE, apply transformation to each point instead
                 updateTrailBuffer(object.get());
-                shader->set_model(model);
+
+                // shader->set_model(model);
                 glBindVertexArray(object->trail_VAO);
                 glDrawArrays(GL_LINE_STRIP, 0, object->trail_points.size());
             }
@@ -223,13 +208,18 @@ class Renderer {
          */
         void updateTrailBuffer(const CelestialObject* object) {
             unsigned int trailVBO = object->trail_VBO;
-            TrailBuffer trail_points = object->trail_points;
+            std::vector<glm::vec3> zoomedPoints;
+
+            std::vector<glm::vec3> trail_pts = object->trail_points.trail_points;
+            for (const auto& position_vec : trail_pts) {
+                zoomedPoints.push_back(position_vec / zoomFactor);
+            }
 
             // Pushes data to buffer, VAO automatically picks it up
             glBindBuffer(GL_ARRAY_BUFFER, trailVBO);
             glBufferData(GL_ARRAY_BUFFER,
-                trail_points.size() * sizeof(glm::vec3),
-                trail_points.data(),
+                trail_pts.size() * sizeof(glm::vec3),
+                zoomedPoints.data(),
                 GL_DYNAMIC_DRAW);
         }
 

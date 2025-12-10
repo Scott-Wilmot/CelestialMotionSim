@@ -112,7 +112,7 @@ void processInput(GLFWwindow* window, Renderer& renderer) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 
-    float cameraSpeed = 100000;
+    float cameraSpeed = 5000;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         renderer.update_camera_position(FORWARD, cameraSpeed);
     }
