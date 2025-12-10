@@ -51,8 +51,8 @@ class Camera {
         ortho_projection = glm::ortho(
             0.0f,
             SCR_WIDTH,
-            0.0f,
-            SCR_HEIGHT, -1.0f, 1.0f
+            SCR_HEIGHT,
+            0.0f, -1.0f, 1.0f
             );
     }
 

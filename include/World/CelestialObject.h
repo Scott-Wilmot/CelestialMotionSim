@@ -124,8 +124,8 @@ class CelestialObject {
                 billboard_coordinates.push_back(sinCoord);
                 billboard_coordinates.push_back(cosCoord);
             }
-            billboard_coordinates.push_back(billboard_coordinates[0]);
-            billboard_coordinates.push_back(billboard_coordinates[1]);
+            billboard_coordinates.push_back(billboard_coordinates[2]);
+            billboard_coordinates.push_back(billboard_coordinates[3]);
         }
 
 

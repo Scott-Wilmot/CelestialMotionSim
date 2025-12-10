@@ -60,6 +60,7 @@ class Renderer {
             shader = std::make_unique<Shader>("..\\shaders\\vertex.glsl",
                 "..\\shaders\\fragment.glsl",
                 "..\\shaders\\billboard.glsl",
+                "..\\shaders\\bFragment.glsl",
                 ASPECT_RATIO
                 );
             camera = std::make_unique<Camera>(FOV, SCR_WIDTH, SCR_HEIGHT);
@@ -148,55 +149,66 @@ class Renderer {
                 // shader->set_projection(camera->perspective_projection);
 
                 // Draw sphere
-                glBindVertexArray(object->vertices_VAO);
                 glm::mat4 model = glm::mat4(1.0f);
                 glm::vec3 rel_pos = object->position - camera->cameraPos;
                 glm::vec3 compressedPosition = compressSqrt(rel_pos, zoomFactor);
-                // model = glm::translate(model, object_ptr.first->position / zoomFactor); // Linear scaling
-                // model = glm::translate(model, compressSqrt(object_ptr.first->position, zoomFactor)); // Sqrt scaling
                 model = glm::translate(model, compressedPosition); // relative camera positioning w/ sqrt
-                // model = glm::scale(model, glm::vec3(radius, radius, radius) / (float)pow(zoomFactor, 1.10f));
-                // model = glm::scale(model, glm::vec3(radius, radius, radius) / zoomFactor);
                 model = glm::scale(model, compressSqrt(glm::vec3(radius, radius, radius), pow(zoomFactor, 1.05)));
-                // shader->set_model(model);
 
                 use_vertex(model, camera->view, camera->perspective_projection);
 
+                glBindVertexArray(object->vertices_VAO);
                 glDrawElements(GL_TRIANGLES, object->NDC_indices.size(), GL_UNSIGNED_INT, 0);
 
                 //////////////////
                 // Trail rendering
                 //////////////////
 
-                // Set model uniform to identity matrix to stop line from moving with objects
-                model = glm::mat4(1.0f);
+                // // Set model uniform to identity matrix to stop line from moving with objects
+                // model = glm::mat4(1.0f);
+                // shader->set_model(model);
+                //
+                // // Update the trail buffer
+                // updateTrailBuffer(object.get());
+                //
+                // // Get and draw the trail VAO
+                // unsigned int trailVAO = object->trail_VAO; // Note: .second grabs the VAO from the pair value in the map
+                // glBindVertexArray(trailVAO);
+                // glDrawArrays(GL_LINE_STRIP, 0, object->trail_points.size());
+                // Draw planet trails
+                model = glm::translate(glm::mat4(1.0f), compressedPosition); // BAD CODE, apply transformation to each point instead
+                updateTrailBuffer(object.get());
                 shader->set_model(model);
-
-                // Update the trail buffer
-                updateTrailBuffer(object.get(), zoomFactor);
-
-                // Get and draw the trail VAO
-                unsigned int trailVAO = object->trail_VAO; // Note: .second grabs the VAO from the pair value in the map
-                glBindVertexArray(trailVAO);
+                glBindVertexArray(object->trail_VAO);
                 glDrawArrays(GL_LINE_STRIP, 0, object->trail_points.size());
+            }
 
-                // 2D screen space renders
-                // shader->set_projection(camera->ortho_projection);
+            // 2D screen space renders
+            glDisable(GL_DEPTH_TEST);
+
+            for (const auto& object : sim.objects) {
+                glm::vec3 rel_pos = object->position - camera->cameraPos;
+                glm::vec3 compressedPosition = compressSqrt(rel_pos, zoomFactor);
+
+                // Draw planet billboard icons
                 glm::vec4 clip = camera->perspective_projection * camera->view * glm::vec4(compressedPosition, 1.0f);
-                // if (clip.w <= 0.0f) return;
+                if (clip.w <= 0.0f) continue;
 
                 glm::vec3 ndc = glm::vec3(clip) / clip.w;
 
-                // float screenX = (ndc.x * 0.5f + 0.5f) * SCR_WIDTH;
-                // float screenY = (ndc.y * 0.5f + 0.5f) * SCR_HEIGHT;
-                float screenX = 100;
-                float screenY = 100;
+                float x = (ndc.x + 1.0f) * 0.5f * SCR_WIDTH;
+                float y = (1.0f - ndc.y) * 0.5f * SCR_HEIGHT;
+                // Add conditional to not render if the x or y is past screen bounds
 
-                use_billboard(camera->ortho_projection, 10, glm::vec2(screenX, screenY));
+                glm::mat4 screenPosition = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, 0.0f));
+                screenPosition = glm::scale(screenPosition, glm::vec3(3.0f, 3.0f, 0.0f));
 
+                use_billboard(camera->ortho_projection, screenPosition);
                 glBindVertexArray(object->billboard_VAO);
-                glDrawArrays(GL_TRIANGLE_FAN, 0, object->billboard_coordinates.size() / 3);
+                glDrawArrays(GL_TRIANGLE_FAN, 0, object->billboard_coordinates.size() / 2);
             }
+
+            glEnable(GL_DEPTH_TEST);
         }
 
         glm::vec3 compressSqrt(const glm::vec3& pos, float scale) {
@@ -209,20 +221,15 @@ class Renderer {
         /**
          * Method that updates the buffers present in line_map to reflect the current line points
          */
-        void updateTrailBuffer(const CelestialObject* object, float zoomFactor) {
+        void updateTrailBuffer(const CelestialObject* object) {
             unsigned int trailVBO = object->trail_VBO;
-            std::vector<glm::vec3> zoomed_points;
-
-            std::vector<glm::vec3> trail_pts = object->trail_points.trail_points;
-            for (const auto& position_vec : trail_pts) {
-                zoomed_points.push_back(position_vec / zoomFactor);
-            }
+            TrailBuffer trail_points = object->trail_points;
 
             // Pushes data to buffer, VAO automatically picks it up
             glBindBuffer(GL_ARRAY_BUFFER, trailVBO);
             glBufferData(GL_ARRAY_BUFFER,
-                object->trail_points.size() * sizeof(glm::vec3),
-                zoomed_points.data(),
+                trail_points.size() * sizeof(glm::vec3),
+                trail_points.data(),
                 GL_DYNAMIC_DRAW);
         }
 
@@ -243,8 +250,8 @@ class Renderer {
             shader->use_vertex(model, view, projection);
         }
 
-        void use_billboard(glm::mat4 ortho, float billboardSize, glm::vec2 screenPosition) {
-            shader->use_billboard(ortho, billboardSize, screenPosition);
+        void use_billboard(glm::mat4 ortho, glm::mat4 screenPosition) {
+            shader->use_billboard(ortho, screenPosition);
         }
 
         void update_camera_position(CameraMovement direction, float cameraSpeed) const {
