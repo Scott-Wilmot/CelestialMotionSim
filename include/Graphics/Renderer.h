@@ -148,12 +148,12 @@ class Renderer {
 
                 glm::mat4 model = glm::mat4(1.0f);
                 glm::vec3 relative_pos = object->position - camera->cameraPos;
-                glm::vec3 compressedPosition = compressSqrt(relative_pos, pow(zoomFactor, 1.5));
-                glm::vec3 compressedRadius = compressSqrt(glm::vec3(radius), pow(zoomFactor, 1.5));
-                model = glm::translate(model, relative_pos / zoomFactor);
-                model = glm::scale(model, glm::vec3(radius) / zoomFactor);
+                glm::vec3 compressedPosition = compressSqrt(relative_pos, zoomFactor);
+                glm::vec3 compressedRadius = compressSqrt(glm::vec3(radius), zoomFactor);
+                model = glm::translate(model, compressedPosition);
+                model = glm::scale(model, compressedRadius);
 
-                use_vertex(model, camera->view, camera->perspective_projection);
+                use_vertex(model, camera->view, camera->perspective_projection, object->color);
 
                 glBindVertexArray(object->vertices_VAO);
                 glDrawElements(GL_TRIANGLES, object->NDC_indices.size(), GL_UNSIGNED_INT, 0);
@@ -186,9 +186,9 @@ class Renderer {
                 // Add conditional to not render if the x or y is past screen bounds
 
                 glm::mat4 screenPosition = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, 0.0f));
-                screenPosition = glm::scale(screenPosition, glm::vec3(3.0f, 3.0f, 0.0f));
+                screenPosition = glm::scale(screenPosition, glm::vec3(2.0f, 2.0f, 0.0f));
 
-                use_billboard(camera->ortho_projection, screenPosition);
+                use_billboard(camera->ortho_projection, screenPosition, object->color);
                 glBindVertexArray(object->billboard_VAO);
                 glDrawArrays(GL_TRIANGLE_FAN, 0, object->billboard_coordinates.size() / 2);
             }
@@ -212,13 +212,14 @@ class Renderer {
 
             std::vector<glm::vec3> trail_pts = object->trail_points.trail_points;
             for (const auto& position_vec : trail_pts) {
-                zoomedPoints.push_back(position_vec / zoomFactor);
+                glm::vec3 compressedPoint = compressSqrt(position_vec, zoomFactor);
+                zoomedPoints.push_back(compressedPoint);
             }
 
             // Pushes data to buffer, VAO automatically picks it up
             glBindBuffer(GL_ARRAY_BUFFER, trailVBO);
             glBufferData(GL_ARRAY_BUFFER,
-                trail_pts.size() * sizeof(glm::vec3),
+                zoomedPoints.size() * sizeof(glm::vec3),
                 zoomedPoints.data(),
                 GL_DYNAMIC_DRAW);
         }
@@ -236,12 +237,12 @@ class Renderer {
             shader->set_projection(camera->perspective_projection);
         }
 
-        void use_vertex(glm::mat4 model, glm::mat4 view, glm::mat4 projection) {
-            shader->use_vertex(model, view, projection);
+        void use_vertex(glm::mat4 model, glm::mat4 view, glm::mat4 projection, glm::vec3 color) {
+            shader->use_vertex(model, view, projection, color);
         }
 
-        void use_billboard(glm::mat4 ortho, glm::mat4 screenPosition) {
-            shader->use_billboard(ortho, screenPosition);
+        void use_billboard(glm::mat4 ortho, glm::mat4 screenPosition, glm::vec3 color) {
+            shader->use_billboard(ortho, screenPosition, color);
         }
 
         void update_camera_position(CameraMovement direction, float cameraSpeed) const {

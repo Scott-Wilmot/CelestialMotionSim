@@ -19,7 +19,6 @@ objects = [
     'Neptune',
     'Pluto',
     'Moon',
-    'Europa'
 ]
 
 # Mappings of obj to its ID for the horizons API request, dict populated by the lookup table step
@@ -107,6 +106,7 @@ for entry in object_ids:
             'VX': VX,
             'VY': VY,
             'VZ': VZ,
+            'color': None,
         }
         json_dict['count'] += 1
         json_dict['objects'].append(object_dict)

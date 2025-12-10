@@ -9,8 +9,8 @@
 
 class Star : public CelestialObject {
     public:
-        Star(glm::vec3 position, glm::vec3 velocity, int segments, float mass, float radius, float pollTime, float trailDuration) :
-            CelestialObject(position, velocity, segments, mass, radius, pollTime, trailDuration)
+        Star(glm::vec3 position, glm::vec3 velocity, int segments, float mass, float radius, float pollTime, float trailDuration, glm::vec3 color) :
+            CelestialObject(position, velocity, segments, mass, radius, pollTime, trailDuration, color)
         {
 
         }

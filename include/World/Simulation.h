@@ -10,6 +10,7 @@ using json = nlohmann::json;
 
 #include "Planet.h"
 #include "Star.h"
+#include "Graphics/Colors.h"
 
 /**
  * Simulation implementation that supports a single star and many planets.
@@ -37,14 +38,14 @@ class Simulation {
                 double radius = object["radius"]; radius *= 1000;
                 glm::vec3 position = glm::vec3(object["X"], object["Y"], object["Z"]); position *= 1000;
                 glm::vec3 velocity = glm::vec3(object["VX"], object["VY"], object["VZ"]); velocity *= 1000;
-
+                glm::vec3 color = Colors::colors.at(object["color"]);
                 // std::cout << object["name"] << std::endl
                 //     << mass << std::endl
                 //     << radius << std::endl
                 //     << position.x << ", " << position.y << ", " << position.z << std::endl
                 //     << velocity.x << ", " << velocity.y << ", " << velocity.z << std::endl << std::endl;
 
-                addObject(std::make_unique<CelestialObject>(position, velocity, 30, mass, radius, 0.1f, 5.0f));
+                addObject(std::make_unique<CelestialObject>(position, velocity, 30, mass, radius, 0.1f, 5.0f, color));
             }
         }
 

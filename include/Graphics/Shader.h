@@ -13,10 +13,10 @@ public:
     unsigned int vertexProgram, billboardProgram;
 
     // Shader Uniform Locations for vertex.glsl
-    int modelLocation, viewLocation, projectionLocation;
+    int modelLocation, viewLocation, projectionLocation, colorLocation;
 
     // Shader Uniform Locations for billboard.glsl
-    int orthoLocation, billboardSizeLocation, screenPositionLocation;
+    int orthoLocation, billboardSizeLocation, screenPositionLocation, bColorLocation;
 
     Shader(const char* vertexPath, const char* fragmentPath, const char* billboardPath, const char* bFragmentPath, float aspect) {
         // File and data objects
@@ -97,10 +97,12 @@ public:
         modelLocation = glGetUniformLocation(vertexProgram, "model");
         viewLocation = glGetUniformLocation(vertexProgram, "view");
         projectionLocation = glGetUniformLocation(vertexProgram, "projection");
+        colorLocation = glGetUniformLocation(vertexProgram, "color");
 
         orthoLocation = glGetUniformLocation(billboardProgram, "ortho");
         billboardSizeLocation = glGetUniformLocation(billboardProgram, "billboardSize");
         screenPositionLocation = glGetUniformLocation(billboardProgram, "screenPosition");
+        bColorLocation = glGetUniformLocation(billboardProgram, "color");
 
         aspect_ratio = aspect;
     }
@@ -109,17 +111,19 @@ public:
         glUseProgram(vertexProgram);
     }
 
-    void use_vertex(glm::mat4 model, glm::mat4 view, glm::mat4 projection) {
+    void use_vertex(glm::mat4 model, glm::mat4 view, glm::mat4 projection, glm::vec3 color) {
         glUseProgram(vertexProgram);
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniform3fv(colorLocation, 1, glm::value_ptr(color));
     }
 
-    void use_billboard(glm::mat4 ortho, glm::mat4 screenPosition) {
+    void use_billboard(glm::mat4 ortho, glm::mat4 screenPosition, glm::vec3 bColor) {
         glUseProgram(billboardProgram);
         glUniformMatrix4fv(orthoLocation, 1, GL_FALSE, glm::value_ptr(ortho));
         glUniformMatrix4fv(screenPositionLocation, 1, GL_FALSE, glm::value_ptr(screenPosition));
+        glUniform3fv(bColorLocation, 1, glm::value_ptr(bColor));
     }
 
     // Shader Uniform Setters

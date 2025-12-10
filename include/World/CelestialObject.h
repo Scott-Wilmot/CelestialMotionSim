@@ -26,6 +26,7 @@ class CelestialObject {
         std::vector<int> NDC_indices;
         TrailBuffer trail_points;
         std::vector<float> billboard_coordinates;
+        glm::vec3 color;
 
         // Simulation data
         glm::vec3 position;
@@ -33,13 +34,14 @@ class CelestialObject {
         float mass;
         float radius;
 
-        CelestialObject(glm::vec3 position, glm::vec3 velocity, int segments, float mass, float radius, float pollTime, float trailDuration) : trail_points(pollTime, trailDuration) {
+        CelestialObject(glm::vec3 position, glm::vec3 velocity, int segments, float mass, float radius, float pollTime, float trailDuration, glm::vec3 color) : trail_points(pollTime, trailDuration) {
             genNDCCoordinates(segments);
             genBillboardCoordinates(segments);
             this->position = position;
             this->velocity = velocity;
             this->mass = mass;
             this->radius = radius;
+            this->color = color;
 
             trail_points.size();
         }
@@ -47,14 +49,14 @@ class CelestialObject {
         void updatePosition() {
             // this->position += this->velocity;
             auto vel = this->velocity;
-            vel *= 1440 * 10;
+            vel *= 1440;
             this->position += vel;
         }
 
         void updateVelocity(glm::vec3 acceleration) {
             // this->velocity += acceleration;
             auto acc = acceleration;
-            acc *= 1440 * 10;
+            acc *= 1440;
             this->velocity += acc;
         }
 
